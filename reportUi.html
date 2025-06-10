@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Report Layout Builder</title>
+  <style>
+    /* ← YOUR ORIGINAL STYLES ← */
+   body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; }
+   #sidebar {
+  width: 260px;
+  background: #34495e;
+  color: white;
+  padding: 20px;
+  overflow-x: hidden;  /* <-- This hides horizontal scroll */
+  overflow-y: auto;    /* <-- Still allows vertical scrolling */
+  box-sizing: border-box;
+}
+
+    #sidebar h3 { 
+    margin-top: 0; 
+    font-size: 20px;
+     }
+    .draggable-label, button, select, input[type="color"] {
+     width: 100%;
+     padding: 10px; 
+     margin: 6px 0;
+     border: none;
+     background: #2980b9;
+     color: #fff;
+     border-radius: 4px;
+     cursor: pointer;
+
+    }
+    .draggable-label {
+          background: #2c3f51;
+          padding: 4px;
+          margin-bottom: 10px;
+          cursor: grab; 
+          border-radius: 4px; }
+    .draggable-label:hover, button:hover {
+          background: #3498db; 
+      }
+    select, input[type="color"] { 
+      background: #2c3e50; 
+      color: #ecf0f1; 
+    }
+    .style-controls {
+       margin: 12px 0;
+       }
+    .style-controls button { 
+      width: 32%;
+       display: inline-block;
+        margin-right: 2%;
+       }
+    #canvasContainer { 
+      flex: 1;
+       overflow: auto;
+        background: #f9f9f9;
+         position: relative;
+       }
+    #canvas { position: relative; background: #f9f9f9; margin: 100px;border: 1px solid #000; }
+    .label-box { position: absolute; font-size: 14px; cursor: move; user-select: none; padding: 2px; background: transparent; border: none; outline: none; min-width: 40px; }
+    .label-box.selected { background-color: rgba(241,196,15,0.2); }
+    .resizer { width: 8px; height: 8px; background: #2980b9; position: absolute; right: -4px; bottom: -4px; cursor: se-resize; border-radius: 2px; display: none; }
+    #xGuide, #yGuide { position: absolute; background: rgba(231,76,60,0.6); z-index: 999; display: none; }
+    #xGuide { height: 1px; width: 100%; }
+    #yGuide { width: 1px; height: 100%; }
+
+    /* ← PAGE IMAGE MODAL STYLES ← */
+   #paperSelectModal {
+  position: fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,0.7);
+  z-index:10000;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+#paperSelectModal .modal {
+  background:#ffffff;
+  padding:30px 40px;
+  border-radius:12px;
+  width:500px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  animation: fadeInUp 0.4s ease-out;
+}
+
+#paperSelectModal h3 {
+  margin-top:0;
+  font-size: 22px;
+  color: #2c3e50;
+  margin-bottom: 20px;
+}
+
+.page-option {
+  display: inline-block;
+  margin: 20px 10px;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-radius: 8px;
+  padding: 6px;
+  position: relative;
+}
+
+.page-option:hover {
+  background: rgba(52, 152, 219, 0.1);
+  box-shadow: 0 0 12px rgba(52, 152, 219, 0.5);
+  transform: scale(1.05);
+}
+
+.page-option img {
+  width: 100px;
+  height: auto;
+  border: 2px solid #34495e;
+  border-radius: 4px;
+  transition: border-color 0.3s ease;
+}
+
+.page-option.selected {
+  animation: pop 0.4s ease;
+  box-shadow: 0 0 20px rgba(52, 152, 219, 0.7);
+  background: rgba(52, 152, 219, 0.1);
+  border-radius: 8px;
+  transform: scale(1.05);
+}
+
+.page-option.selected img {
+  border: 3px solid #2980b9;
+  box-shadow: 0 4px 10px rgba(41, 128, 185, 0.6);
+}
+
+.page-option label {
+  display: block;
+  margin-top: 5px;
+  font-size: 14px;
+  color: #34495e;
+}
+
+#xDistanceGuide, #yDistanceGuide { 
+  position: absolute; 
+  background: rgba(46, 204, 113, 0.6); /* Green color for distance guides */
+  z-index: 999; 
+  display: none; 
+}
+#xDistanceGuide { height: 1px; width: 100%; }
+#yDistanceGuide { width: 1px; height: 100%; }
+
+.distance-tooltip {
+  position: absolute;
+  background: #2c3e50;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  z-index: 1000;
+  display: none;
+  pointer-events: none;
+}
+
+input[type="range"] {
+  width: 100%;
+  margin: 8px 0;
+}
+
+/* Animations */
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+@keyframes fadeInUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+
+
+  </style>
+</head>
+<body>
+
+  <!-- 📐 PAPER SIZE SELECTION MODAL -->
+    <div id="paperSelectModal">
+    <div class="modal">
+      <h3>Select Paper Size</h3>
+      <div class="page-option" data-size="A4" onclick="selectPage('A4')">
+        <img src="./images/A4.png" alt="A4 Page">
+        <label>A4</label>
+      </div>
+      <div class="page-option" data-size="A5" onclick="selectPage('A5')">
+        <img src="./images/A5.png" alt="A5 Page">
+        <label>A5</label>
+      </div>
+      <div class="page-option" data-size="B4" onclick="selectPage('B4')">
+        <img src="./images/B4.png" alt="B4 Page">
+        <label>B4</label>
+      </div>
+      <div class="page-option" data-size="Letter" onclick="selectPage('Letter')">
+        <img src="./images/Letter.png" alt="Letter Page">
+        <label>Letter</label>
+      </div>
+      <button onclick="startDesigning()">Start Designing</button>
+    </div>
+  </div>
+
+  <!-- 🧰 SIDEBAR -->
+  <div id="sidebar">
+    <h3>LABELS</h3>
+    <div class="draggable-label" draggable="true" data-label="Patient Name">Patient Name</div>
+    <div class="draggable-label" draggable="true" data-label="Doctor Name">Doctor Name</div>
+    <div class="draggable-label" draggable="true" data-label="Test Name">Test Name</div>
+    <div class="draggable-label" draggable="true" data-label="Result">Result</div>
+    <div class="draggable-label" draggable="true" data-label="Price">Price</div>
+
+    <h3>STYLE</h3>
+    <label>Font Size</label>
+    <select id="fontSize">
+      <option value="11px">11</option>
+      <option value="12px" selected>12</option>
+      <option value="14px">14</option>
+      <option value="18px">18</option>
+      <option value="24px">24</option>
+      <option value="30px">30</option>
+    </select>
+    <label>Font Family</label>
+    <select id="fontFamily">
+      <option value="Arial">Arial</option><option value="Georgia">Georgia</option>
+      <option value="Courier New">Courier New</option><option value="Times New Roman">Times New Roman</option>
+    </select>
+    <label>Font Color</label>
+    <input type="color" id="fontColor" value="#000000">
+
+    <div class="style-controls">
+      <button id="btnBold"><strong>B</strong></button>
+      <button id="btnItalic"><em>I</em></button>
+      <button id="btnUnderline"><u>U</u></button>
+    </div>
+    <div class="style-controls">
+      <button id="alignLeft">Left</button>
+      <button id="alignCenter">Center</button>
+      <button id="alignRight">Right</button>
+    </div>
+
+    <!-- 🧭 Zoom Controls -->
+    <button onclick="zoomIn()">Zoom In</button>
+    <button onclick="zoomOut()">Zoom Out</button>
+    <button onclick="resetZoom()">Reset Zoom</button>
+
+    <!-- 🛠 Controls -->
+    <!-- <button id="modeToggle">Switch to View</button> -->
+    <button id="clearAllLabels">Clear All Labels</button>  <!-- New button -->
+    <button id="deleteSelected">Delete Selected</button>
+
+    <h3>GUIDE SETTINGS</h3>
+<label>Guide Color</label>
+<input type="color" id="guideColor" value="#e74c3c">
+<label>Distance Guide Color</label>
+<input type="color" id="distanceGuideColor" value="#2ecc71">
+<label>Minimum Spacing</label>
+<input type="range" id="minSpacing" min="10" max="100" value="20">
+<span id="minSpacingValue">20px</span>
+<button id="toggleGuides">Toggle Guides</button>
+<button id="toggleDistanceGuides">Toggle Distance Guides</button>
+
+    <button id="exportJSON">Export JSON</button>
+    <button id="exportPNG">Export as PNG</button>
+  </div>
+
+  <!-- 🖼 Scrollable Canvas Wrapper -->
+  <div id="canvasContainer">
+    <div id="canvas">
+      <div id="xDistanceGuide"></div>
+      <div id="yDistanceGuide"></div>
+      <div id="distanceValue" class="distance-tooltip"></div>
+      <div id="xGuide"></div>
+      <div id="yGuide"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script>
+
+let guideSettings = {
+  enabled: true,
+  distanceEnabled: true,
+  guideColor: '#e74c3c',
+  distanceColor: '#2ecc71',
+  minSpacing: 20
+};
+
+    const paperSizes = {
+      A4: { w: 210, h: 297 },
+      A5: { w: 148, h: 210 },
+      B4: { w: 250, h: 353 },
+      Letter: { w: 216, h: 279 }
+    };
+    const PPM = 3.78;
+    let zoomLevel = 1, editMode = true, selectedElement = null;
+
+
+    
+    const canvas = document.getElementById('canvas'),
+     xGuide = document.getElementById('xGuide'), yGuide = document.getElementById('yGuide');
+
+        function selectPage(page) {
+      document.querySelectorAll('.page-option').forEach(option => {
+        option.classList.remove('selected');
+      });
+      const selectedOption = document.querySelector(`.page-option[data-size="${page}"]`);
+      selectedOption.classList.add('selected');
+      selectedPage = page;
+    }
+
+    function startDesigning() {
+      if (!selectedPage) {
+        alert('Please select a page size!');
+        return;
+      }
+      const { w, h } = paperSizes[selectedPage];
+      const pw = w * PPM, ph = h * PPM;
+      canvas.style.width = `${pw}px`;
+      canvas.style.height = `${ph}px`;
+      document.getElementById('paperSelectModal').style.display = 'none';
+      enableInteractions();
+    }
+
+
+    function setPaperSize(){
+      const sel = document.getElementById('paperSize').value;
+      const {w,h} = paperSizes[sel];
+      const pw = w*PPM, ph = h*PPM;
+      canvas.style.width = `${pw}px`;
+      canvas.style.height = `${ph}px`;
+      document.getElementById('paperSelectModal').style.display = 'none';
+      enableInteractions();
+    }
+
+    function enableInteractions(){
+      document.querySelectorAll('.draggable-label').forEach(lbl=>{
+        lbl.ondragstart=e=>e.dataTransfer.setData('text/plain', lbl.dataset.label);
+      });
+      canvas.ondragover=e=>e.preventDefault();
+      canvas.ondrop=e=>{
+        e.preventDefault();
+        const t=e.dataTransfer.getData('text/plain');
+        const rect=canvas.getBoundingClientRect();
+        createLabel(t, e.clientX-rect.left, e.clientY-rect.top);
+      };
+
+    
+      document.getElementById('deleteSelected').onclick=()=>{if(selectedElement){selectedElement.remove(); saveLayout(); selectedElement=null;}};
+      document.addEventListener('keydown', e=>{ if(e.key==='Delete'&&selectedElement){selectedElement.remove(); saveLayout(); selectedElement=null;} });
+
+      document.getElementById('fontSize').onchange=e=>{if(selectedElement){selectedElement.style.fontSize=e.target.value; saveLayout();}};
+      document.getElementById('fontColor').onchange=e=>{if(selectedElement){selectedElement.style.color=e.target.value; saveLayout();}};
+      document.getElementById('fontFamily').onchange=e=>{if(selectedElement){selectedElement.style.fontFamily=e.target.value; saveLayout();}};
+      ['btnBold','btnItalic','btnUnderline','alignLeft','alignCenter','alignRight']
+        .forEach(id=>document.getElementById(id).onclick=()=>{
+          if(!selectedElement) return;
+          const s = selectedElement.style;
+          if(id==='btnBold') s.fontWeight = s.fontWeight==='bold'?'normal':'bold';
+          if(id==='btnItalic') s.fontStyle = s.fontStyle==='italic'?'normal':'italic';
+          if(id==='btnUnderline') s.textDecoration = s.textDecoration==='underline'?'none':'underline';
+          if(id==='alignLeft') s.textAlign='left';
+          if(id==='alignCenter') s.textAlign='center';
+          if(id==='alignRight') s.textAlign='right';
+          saveLayout();
+        });
+
+      document.getElementById('exportJSON').onclick=()=>{
+        localStorage.setItem('builderLayout', JSON.stringify(getLayoutData()));
+        alert('Saved JSON');
+      };
+      document.getElementById('exportPNG').onclick=()=>{
+        html2canvas(canvas).then(c=>{ const a=document.createElement('a'); a.download='layout.png'; a.href=c.toDataURL(); a.click(); });
+      };
+
+      document.getElementById('clearAllLabels').onclick = () => {
+  if (confirm('Are you sure you want to remove all labels from the report?')) {
+    document.querySelectorAll('.label-box').forEach(label => label.remove());
+    saveLayout();
+    selectedElement = null;
+  }
+};
+
+
+// Guide controls
+document.getElementById('guideColor').onchange = e => {
+  guideSettings.guideColor = e.target.value;
+  xGuide.style.background = yGuide.style.background = guideSettings.guideColor;
+};
+document.getElementById('distanceGuideColor').onchange = e => {
+  guideSettings.distanceColor = e.target.value;
+  xDistanceGuide.style.background = yDistanceGuide.style.background = guideSettings.distanceColor;
+};
+document.getElementById('minSpacing').oninput = e => {
+  guideSettings.minSpacing = parseInt(e.target.value);
+  document.getElementById('minSpacingValue').textContent = `${guideSettings.minSpacing}px`;
+};
+document.getElementById('toggleGuides').onclick = () => {
+  guideSettings.enabled = !guideSettings.enabled;
+  if (!guideSettings.enabled) clearSnap();
+};
+document.getElementById('toggleDistanceGuides').onclick = () => {
+  guideSettings.distanceEnabled = !guideSettings.distanceEnabled;
+  if (!guideSettings.distanceEnabled) {
+    xDistanceGuide.style.display = yDistanceGuide.style.display = 'none';
+    document.getElementById('distanceValue').style.display = 'none';
+  }
+};
+
+      loadLayout();
+    }
+
+  function createLabel(text, x, y) {
+  // Get canvas dimensions
+  const canvasRect = canvas.getBoundingClientRect();
+  const canvasWidth = parseInt(canvas.style.width);
+  const canvasHeight = parseInt(canvas.style.height);
+  
+  // Constrain position to be within canvas
+  x = Math.max(0, Math.min(x, canvasWidth - 40)); // Minimum width of 40px
+  y = Math.max(0, Math.min(y, canvasHeight - 20)); // Minimum height of 20px
+  
+  const div = document.createElement('div');
+  div.className = 'label-box'; 
+  div.textContent = text; 
+  div.contentEditable = true;
+  div.style.left = `${x}px`; 
+  div.style.top = `${y}px`; 
+  div.style.fontSize = '14px';
+  
+  const r = document.createElement('div'); 
+  r.className = 'resizer'; 
+  div.appendChild(r);
+  
+  makeDraggable(div); 
+  makeResizable(div, r); 
+  canvas.appendChild(div); 
+  saveLayout();
+}
+
+    function makeDraggable(el){
+      el.onmousedown=e=>{
+        if(!editMode||e.target.classList.contains('resizer')) return;
+        document.querySelectorAll('.label-box').forEach(b=>{b.classList.remove('selected'); b.querySelector('.resizer').style.display='none';});
+        el.classList.add('selected'); selectedElement=el;
+        el.querySelector('.resizer').style.display='block';
+        startDrag(e,(dx,dy)=>{el.style.left=dx; el.style.top=dy; drawSnap(el);}, ()=>{
+          clearSnap(); saveLayout();
+        });
+      };
+      el.oninput = ()=>saveLayout();
+    }
+ 
+function startDrag(e, moveFn, endFn) {
+  const rect = canvas.getBoundingClientRect();
+  const canvasWidth = parseInt(canvas.style.width);
+  const canvasHeight = parseInt(canvas.style.height);
+  
+  const sx = e.clientX - rect.left - parseInt(e.target.style.left);
+  const sy = e.clientY - rect.top - parseInt(e.target.style.top);
+  
+  function onMove(ev) {
+    let x = (ev.clientX - rect.left - sx);
+    let y = (ev.clientY - rect.top - sy);
+    
+    // Constrain to canvas boundaries
+    const elWidth = e.target.offsetWidth;
+    const elHeight = e.target.offsetHeight;
+    
+    x = Math.max(0, Math.min(x, canvasWidth - elWidth));
+    y = Math.max(0, Math.min(y, canvasHeight - elHeight));
+    
+    moveFn(`${x}px`, `${y}px`);
+  }
+  
+  function onUp() { 
+    document.removeEventListener('mousemove', onMove); 
+    document.removeEventListener('mouseup', onUp); 
+    endFn(); 
+  }
+  
+  document.addEventListener('mousemove', onMove); 
+  document.addEventListener('mouseup', onUp);
+}
+
+  function makeResizable(box, handle) {
+  handle.onmousedown = e => {
+    e.stopPropagation();
+    const canvasWidth = parseInt(canvas.style.width);
+    const canvasHeight = parseInt(canvas.style.height);
+    
+    const maxWidth = canvasWidth - box.offsetLeft;
+    const maxHeight = canvasHeight - box.offsetTop;
+    
+    const sw = box.offsetWidth, sh = box.offsetHeight, sx = e.clientX, sy = e.clientY;
+    
+    function onMove(ev) {
+      const newWidth = Math.min(maxWidth, sw + (ev.clientX - sx));
+      const newHeight = Math.min(maxHeight, sh + (ev.clientY - sy));
+      
+      // Minimum size constraints
+      if (newWidth >= 40 && newHeight >= 20) {
+        box.style.width = `${newWidth}px`;
+        box.style.height = `${newHeight}px`;
+      }
+    }
+    
+    function onUp() { 
+      document.removeEventListener('mousemove', onMove); 
+      document.removeEventListener('mouseup', onUp); 
+      saveLayout(); 
+    }
+    
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  };
+}
+
+    function zoomIn(){ zoomLevel+=0.1; applyZoom(); }
+    function zoomOut(){ zoomLevel=Math.max(0.2,zoomLevel-0.1); applyZoom(); }
+    function resetZoom(){ zoomLevel=1; applyZoom(); }
+    function applyZoom(){ canvas.style.transform=`scale(${zoomLevel})`; }
+
+  function drawSnap(el) {
+  if (!guideSettings.enabled) return;
+  
+  clearSnap();
+  const others = [...document.querySelectorAll('.label-box')].filter(b => b !== el);
+  const r1 = el.getBoundingClientRect();
+  const cr = canvas.getBoundingClientRect();
+  const distanceValue = document.getElementById('distanceValue');
+  
+  // Standard alignment guides
+  others.forEach(o => {
+    const r2 = o.getBoundingClientRect();
+    if (Math.abs(r1.left - r2.left) < 8) {
+      yGuide.style.left = `${r2.left - cr.left}px`;
+      yGuide.style.display = 'block';
+    }
+    if (Math.abs(r1.top - r2.top) < 8) {
+      xGuide.style.top = `${r2.top - cr.top}px`;
+      xGuide.style.display = 'block';
+    }
+  });
+
+  // Distance guides (only if enabled and min spacing met)
+  if (guideSettings.distanceEnabled && others.length >= 2) {
+    // Check horizontal spacing
+    const sortedX = [...others].sort((a, b) => 
+      a.getBoundingClientRect().left - b.getBoundingClientRect().left);
+    
+    for (let i = 1; i < sortedX.length; i++) {
+      const prev = sortedX[i-1].getBoundingClientRect();
+      const current = sortedX[i].getBoundingClientRect();
+      const spacing = current.left - prev.left;
+      
+      if (spacing < guideSettings.minSpacing) continue;
+      
+      const elToPrev = Math.abs(r1.left - prev.left - spacing);
+      const elToNext = Math.abs(r1.left - current.left + spacing);
+      
+      if (elToPrev < 8) {
+        const guidePos = r1.left + spacing - cr.left;
+        yDistanceGuide.style.left = `${guidePos}px`;
+        yDistanceGuide.style.display = 'block';
+        
+        // Show distance value
+        distanceValue.textContent = `${Math.round(spacing)}px`;
+        distanceValue.style.left = `${guidePos + 10}px`;
+        distanceValue.style.top = `${r1.top - cr.top + 10}px`;
+        distanceValue.style.display = 'block';
+      }
+      if (elToNext < 8) {
+        const guidePos = r1.left - spacing - cr.left;
+        yDistanceGuide.style.left = `${guidePos}px`;
+        yDistanceGuide.style.display = 'block';
+        
+        // Show distance value
+        distanceValue.textContent = `${Math.round(spacing)}px`;
+        distanceValue.style.left = `${guidePos + 10}px`;
+        distanceValue.style.top = `${r1.top - cr.top + 10}px`;
+        distanceValue.style.display = 'block';
+      }
+    }
+
+    // Check vertical spacing
+    const sortedY = [...others].sort((a, b) => 
+      a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+    
+    for (let i = 1; i < sortedY.length; i++) {
+      const prev = sortedY[i-1].getBoundingClientRect();
+      const current = sortedY[i].getBoundingClientRect();
+      const spacing = current.top - prev.top;
+      
+      if (spacing < guideSettings.minSpacing) continue;
+      
+      const elToPrev = Math.abs(r1.top - prev.top - spacing);
+      const elToNext = Math.abs(r1.top - current.top + spacing);
+      
+      if (elToPrev < 8) {
+        const guidePos = r1.top + spacing - cr.top;
+        xDistanceGuide.style.top = `${guidePos}px`;
+        xDistanceGuide.style.display = 'block';
+        
+        // Show distance value
+        distanceValue.textContent = `${Math.round(spacing)}px`;
+        distanceValue.style.left = `${r1.left - cr.left + 10}px`;
+        distanceValue.style.top = `${guidePos + 10}px`;
+        distanceValue.style.display = 'block';
+      }
+      if (elToNext < 8) {
+        const guidePos = r1.top - spacing - cr.top;
+        xDistanceGuide.style.top = `${guidePos}px`;
+        xDistanceGuide.style.display = 'block';
+        
+        // Show distance value
+        distanceValue.textContent = `${Math.round(spacing)}px`;
+        distanceValue.style.left = `${r1.left - cr.left + 10}px`;
+        distanceValue.style.top = `${guidePos + 10}px`;
+        distanceValue.style.display = 'block';
+      }
+    }
+  }
+}
+
+function clearSnap() {
+  xGuide.style.display = yGuide.style.display = 'none';
+  xDistanceGuide.style.display = yDistanceGuide.style.display = 'none';
+  document.getElementById('distanceValue').style.display = 'none';
+}
+
+
+    
+
+    function saveLayout(){
+      localStorage.setItem('builderLayout', JSON.stringify(getLayoutData()));
+    }
+    function getLayoutData(){
+      return [...document.querySelectorAll('.label-box')].map(b=>({
+        text:b.innerText,
+        x:parseInt(b.style.left),
+        y:parseInt(b.style.top),
+        fontSize:b.style.fontSize,
+        fontColor:b.style.color,
+        fontFamily:b.style.fontFamily,
+        fontWeight:b.style.fontWeight,
+        fontStyle:b.style.fontStyle,
+        textDecoration:b.style.textDecoration,
+        textAlign:b.style.textAlign
+      }));
+    }
+
+    function loadLayout(){
+      const data=JSON.parse(localStorage.getItem('builderLayout')||'[]');
+      data.forEach(item=>{
+        createLabel(item.text,item.x,item.y);
+        const b=document.querySelectorAll('.label-box').pop();
+        Object.assign(b.style,{
+          fontSize:item.fontSize,fontFamily:item.fontFamily,
+          color:item.fontColor,fontWeight:item.fontWeight,
+          fontStyle:item.fontStyle,textDecoration:item.textDecoration,
+          textAlign:item.textAlign
+        });
+      });
+    }
+
+    document.getElementById('canvasContainer').addEventListener('mousedown',e => {
+      if(!e.target.classList.contains('label-box') && !e.target.classList.contains('resizer')){
+        document.querySelectorAll('.label-box').forEach(b=>{
+          b.classList.remove('selected');
+          b.querySelector('.resizer').style.display='none';
+        });
+        selectedElement=null;
+      }
+    });
+
+  </script>
+</body>
+</html>
