@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <title>Report Layout Builder</title>
   <style>
+
+
     /* ← YOUR ORIGINAL STYLES ← */
    body { font-family: 'Segoe UI', sans-serif;
           margin: 0;
@@ -19,6 +21,8 @@
   overflow-y: auto;    /* <-- Still allows vertical scrolling */
   box-sizing: border-box;
 }
+
+
 
     #sidebar h3 { 
     margin-top: 0; 
@@ -638,6 +642,236 @@ input[type="range"] {
 }
 
 
+/* Crop Modal Styles */
+#cropModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.7);
+  z-index: 10001;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+ #cropModal .modal {
+    width: 600px;
+    max-width: 90vw;
+    padding: 30px;
+     overflow-y: auto;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    animation: fadeInUp 0.4s ease-out;
+  }
+
+  #cropModal h3 {
+    margin-top: 0;
+    font-size: 22px;
+    color: #5391cf;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .crop-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+
+  .crop-controls-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .crop-ratio-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .crop-ratio-selector label {
+    font-weight: 600;
+    color: #34495e;
+    white-space: nowrap;
+  }
+
+  .crop-ratio-selector select {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    background: white;
+    color: #34495e;
+    font-size: 14px;
+    min-width: 180px;
+  }
+
+  .zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .zoom-controls button {
+    padding: 8px 12px;
+    background: #2980b9;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .zoom-controls button:hover {
+    background: #3498db;
+  }
+
+  .zoom-controls button svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+  }
+
+  .zoom-percentage {
+    display: flex;
+    align-items: center;
+    margin-left: 10px;
+    background: white;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+  }
+
+  .zoom-percentage input {
+    width: 50px;
+    padding: 4px;
+    border: none;
+    text-align: center;
+    font-size: 14px;
+    color: #34495e;
+  }
+
+  .zoom-percentage span {
+    margin-left: 5px;
+    color: #7f8c8d;
+    font-size: 14px;
+  }
+
+  .crop-container {
+    width: 100%;
+    height: 500px;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    background: #f5f5f5;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  }
+
+  .crop-preview {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #cropImage {
+    position: absolute;
+    max-width: none;
+    cursor: move;
+    transform-origin: 0 0;
+    transition: transform 0.2s ease;
+  }
+
+  .crop-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    box-shadow: inset 0 0 0 2px rgba(52, 152, 219, 0.8);
+    pointer-events: none;
+    border-radius: 6px;
+  }
+
+  .crop-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+  }
+
+  .crop-modal-footer button {
+    padding: 10px 24px;
+    font-size: 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+  }
+
+  .crop-modal-footer button:first-child {
+    background: #2980b9;
+    color: white;
+    border: none;
+  }
+
+  .crop-modal-footer button:first-child:hover {
+    background: #3498db;
+  }
+
+  .crop-modal-footer button:last-child {
+    background: white;
+    color: #34495e;
+    border: 1px solid #ddd;
+  }
+
+  .crop-modal-footer button:last-child:hover {
+    background: #f8f9fa;
+    border-color: #ccc;
+  }
+
+  @media (max-width: 768px) {
+    .crop-controls {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .crop-controls-group {
+      width: 100%;
+      justify-content: space-between;
+    }
+    
+    .crop-ratio-selector {
+      flex: 1;
+    }
+    
+    .zoom-controls {
+      flex: 1;
+      justify-content: flex-end;
+    }
+  }
+
+
   </style>
 </head>
 <body>
@@ -701,6 +935,58 @@ input[type="range"] {
     </div>
   </div>
 </div>
+
+<!-- ✂️ CROP MODAL -->
+<div id="cropModal" style="display: none;">
+  <div class="modal">
+    <h3>Crop Background Image</h3>
+    
+    <div class="crop-controls">
+      <div class="crop-controls-group">
+        <div class="crop-ratio-selector">
+          <label for="cropRatio">Crop Ratio:</label>
+          <select id="cropRatio">
+            <option value="A4">A4 (210×297mm)</option>
+            <option value="A5">A5 (148×210mm)</option>
+            <option value="B4">B4 (250×353mm)</option>
+            <option value="Letter">Letter (216×279mm)</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="crop-controls-group">
+        <div class="zoom-controls">
+          <button onclick="zoomCropIn()" title="Zoom In">
+            <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+          </button>
+          <button onclick="zoomCropOut()" title="Zoom Out">
+            <svg viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>
+          </button>
+          <button onclick="resetCropZoom()" title="Reset Zoom">
+            <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+          </button>
+           <div class="zoom-percentage">
+          <input type="number" id="zoomPercentage" min="0" max="150" step="1" value="100">
+          <span>%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="crop-container">
+      <div class="crop-preview">
+        <img id="cropImage" src="" alt="Background to crop">
+        <div class="crop-overlay"></div>
+      </div>
+    </div>
+    
+    <div class="crop-modal-footer">
+      <button onclick="applyCrop()">Apply Crop</button>
+      <button onclick="skipCrop()">Skip Cropping</button>
+    </div>
+  </div>
+</div>
+
 
   <!-- 🧰 SIDEBAR -->
   <div id="sidebar">
@@ -870,60 +1156,312 @@ input[type="range"] {
 
     // Sample data (this would come from API in real implementation)
 const reportData = {
-  age: "age",
-  barcode: "barcode",
-  Patient_id: "client_id",
-  collected_date:"collected_date",
-  collected_on: "collected_on",
-  collection: "collection",
-  created_at: "created_at",
-  culture_id: "collection",
-  date: "date",
-  delete_status: "delete_status",
-  discount: "discount",
-  doctor_email: "doctor_email",
-  doctor_id: "doctor_id",
-  referred_by : "doctor_name",
-  doctor_phone: "doctor_phone",
-  due_amount: "due_amount",
-  group_id: "group_id",
-  hospital_name: "hospital_name",
-  id_no: "id_no",
-  loggedinid: "loggedinid",
+  Age: "age",
+  Barcode: "barcode",
+  Patient_Id: "client_id",
+  Collected_Date:"collected_date",
+  Collected_On: "collected_on",
+  Collection: "collection",
+  Created_At: "created_at",
+  Culture_Id: "collection",
+  Date: "date",
+  Delete_status: "delete_status",
+  Discount: "discount",
+  Doctor_Email: "doctor_email",
+  Doctor_Id: "doctor_id",
+  Referred_By : "doctor_name",
+  Doctor_Phone: "doctor_phone",
+  Due_Amount: "due_amount",
+  Group_Id: "group_id",
+  Hospital_Name: "hospital_name",
+  Id_No: "id_no",
+  Logged_In_Id: "loggedinid",
   multisign: "multisign",
-  order_date: "order_date",
-  order_id: "order_id",
-  orderedtestgroup: "orderedtestgroup",
-  paid_amount: "paid_amount",
-  patient_address: "patient_address",
-  patient_code: "patient_code",
-  patient_dob: "patient_dob",
-  patient_email: "patient_email",
-  patient_gender: "patient_gender",
-  patient_name: "patient_name",
-  patient_phone: "patient_phone",
-  prescription: "prescription",
-  recievedsample: "recievedsample",
-  report_date: "report_date",
-  report_id: "report_id",
-  report_status: "report_status",
-  reported_on: "reported_on",
-  sample_id: "sample_id",
-  signature_id: "signature_id",
-  signatures: "signatures",
-  status: "status",
-  subtotal: "subtotal",
-  ta_time: "ta_time",
-  test_id: "test_id",
-  testorder: "testorder",
-  workorder_id: "workorder_id",
-  workorder_status: "workorder_status"
+  Order_Date: "order_date",
+  Order_Id: "order_id",
+  Orderedtestgroup: "orderedtestgroup",
+  Paid_Amount: "paid_amount",
+  Patient_Address: "patient_address",
+  Patient_Code: "patient_code",
+  Patient_DOB: "patient_dob",
+  Patient_Email: "patient_email",
+  Patient_Gender: "patient_gender",
+  Patient_Name: "patient_name",
+  Patient_Phone: "patient_phone",
+  Prescription: "prescription",
+  Recievedsample: "recievedsample",
+  Report_Date: "report_date",
+  Report_Id: "report_id",
+  Report_Status: "report_status",
+  Reported_On: "reported_on",
+  Sample_Id: "sample_id",
+  Signature_Id: "signature_id",
+  Signatures: "signatures",
+  Status: "status",
+  Subtotal: "subtotal",
+  ta_Time: "ta_time",
+  Test_ID: "test_id",
+  Testorder: "testorder",
+  Workorder_ID: "workorder_id",
+  Workorder_Status: "workorder_status"
 };
+
+let cropZoom = 1;
+let cropOffsetX = 0;
+let cropOffsetY = 0;
+let isDragging = false;
+let startX, startY;
+let currentCropRatio = 'A4';
 
 // Variables for pagination
 let currentLabelPage = 1;
 let currentValuePage = 1;
 const itemsPerPage = 6;
+
+// Add this after the cropZoom variable declarations
+document.getElementById('zoomPercentage').addEventListener('change', function(e) {
+  const percentage = parseInt(e.target.value);
+  if (!isNaN(percentage)) {
+    setCropZoom(percentage / 100);
+  }
+});
+
+function setCropZoom(zoom) {
+  // Convert zoom to percentage (0-150%)
+  const percentage = Math.round(zoom * 100);
+  // Ensure percentage stays within bounds (0-150)
+  const clampedPercentage = Math.max(0, Math.min(150, percentage));
+  
+  // Convert back to zoom factor (0-1.5)
+  cropZoom = clampedPercentage / 100;
+  
+  document.getElementById('zoomPercentage').value = clampedPercentage;
+  document.getElementById('cropImage').style.transform = `translate(${cropOffsetX}px, ${cropOffsetY}px) scale(${cropZoom})`;
+}
+
+// Update the existing zoom functions to use setCropZoom
+function zoomCropIn() {
+  const currentPercentage = parseInt(document.getElementById('zoomPercentage').value);
+  if (currentPercentage < 150) {
+    setCropZoom(cropZoom + 0.1);
+  }
+}
+
+function zoomCropOut() {
+  const currentPercentage = parseInt(document.getElementById('zoomPercentage').value);
+  if (currentPercentage > 0) {
+    setCropZoom(cropZoom - 0.1);
+  }
+}
+
+function resetCropZoom() {
+  setCropZoom(1);
+}
+
+// Update the image load handler to set initial percentage
+
+
+// Helper function to crop image
+function cropImage(imageSrc, cropX, cropY, cropWidth, cropHeight) {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    img.onload = function() {
+      canvas.width = cropWidth;
+      canvas.height = cropHeight;
+      ctx.drawImage(img, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+      resolve(canvas.toDataURL());
+    };
+    
+    img.src = imageSrc;
+  });
+}
+
+// Helper function to get crop dimensions
+function getCropDimensions() {
+  const container = document.querySelector('.crop-container');
+  const overlay = document.querySelector('.crop-overlay');
+  const img = document.getElementById('cropImage');
+  
+  // Get relative positions
+  const containerRect = container.getBoundingClientRect();
+  const overlayRect = overlay.getBoundingClientRect();
+  const imgRect = img.getBoundingClientRect();
+  
+  // Calculate crop coordinates relative to image
+  const scaleX = img.naturalWidth / imgRect.width;
+  const scaleY = img.naturalHeight / imgRect.height;
+  
+  const cropX = (overlayRect.left - imgRect.left) * scaleX;
+  const cropY = (overlayRect.top - imgRect.top) * scaleY;
+  const cropWidth = overlayRect.width * scaleX;
+  const cropHeight = overlayRect.height * scaleY;
+  
+  return { cropX, cropY, cropWidth, cropHeight };
+}
+
+// Update the showCropModal function
+function showCropModal(imageSrc) {
+  document.getElementById('paperSelectModal').style.display = 'none';
+  document.getElementById('cropModal').style.display = 'flex';
+  
+  const cropImage = document.getElementById('cropImage');
+  cropImage.src = imageSrc;
+  
+  // Reset crop settings
+  cropZoom = 1;
+  cropOffsetX = 0;
+  cropOffsetY = 0;
+  
+  // Set initial crop ratio based on selected page
+  document.getElementById('cropRatio').value = selectedPage;
+  currentCropRatio = selectedPage;
+  updateCropOverlay();
+  
+  // Initialize dragging
+  cropImage.onmousedown = function(e) {
+    if (e.target === cropImage) { // Only drag on the image itself
+      isDragging = true;
+      startX = e.clientX - cropOffsetX;
+      startY = e.clientY - cropOffsetY;
+      e.preventDefault();
+    }
+  };
+  
+  document.onmousemove = function(e) {
+    if (!isDragging) return;
+    
+    cropOffsetX = e.clientX - startX;
+    cropOffsetY = e.clientY - startY;
+    
+    cropImage.style.transform = `translate(${cropOffsetX}px, ${cropOffsetY}px) scale(${cropZoom})`;
+  };
+  
+  document.onmouseup = function() {
+    isDragging = false;
+  };
+  
+  // Zoom with mouse wheel - updated to 2% increments
+  cropImage.onwheel = function(e) {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.02 : 0.02; // 2% increment
+    setCropZoom(cropZoom + delta);
+  };
+  
+  // Wait for image to load before positioning
+  cropImage.onload = function() {
+    // Reset transform first
+    cropImage.style.transform = 'translate(0, 0) scale(1)';
+    
+    const container = document.querySelector('.crop-container');
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+    
+    // Get natural dimensions of the image
+    const imgWidth = cropImage.naturalWidth;
+    const imgHeight = cropImage.naturalHeight;
+    
+    // Calculate scale to fit container while maintaining aspect ratio
+    const scale = Math.min(
+      containerWidth / imgWidth,
+      containerHeight / imgHeight
+    );
+    
+    // Apply initial scale and center the image
+    cropZoom = scale;
+   // Ensure initial zoom is between 0-150%
+  if (cropZoom > 1.5) cropZoom = 1.5;
+  if (cropZoom < 0) cropZoom = 0;
+  
+  cropOffsetX = (containerWidth - imgWidth * cropZoom) / 2;
+  cropOffsetY = (containerHeight - imgHeight * cropZoom) / 2;
+  
+  cropImage.style.width = `${imgWidth}px`;
+  cropImage.style.height = `${imgHeight}px`;
+  cropImage.style.transform = `translate(${cropOffsetX}px, ${cropOffsetY}px) scale(${cropZoom})`;
+
+  setCropZoom(cropZoom);
+  };
+}
+
+function updateCropOverlay() {
+  const { w, h } = paperSizes[currentCropRatio];
+  const container = document.querySelector('.crop-container');
+  const overlay = document.querySelector('.crop-overlay');
+  
+  // Calculate aspect ratio
+  const aspectRatio = w / h;
+  
+  // Set container size while maintaining aspect ratio
+  if (aspectRatio > 1) {
+    // Wider than tall
+    container.style.width = '600px';
+    container.style.height = `${600 / aspectRatio}px`;
+  } else {
+    // Taller than wide
+    container.style.height = '400px';
+    container.style.width = `${400 * aspectRatio}px`;
+  }
+  
+  // Position overlay to cover the container
+  overlay.style.width = '100%';
+  overlay.style.height = '100%';
+  overlay.style.left = '0';
+  overlay.style.top = '0';
+}
+
+
+async function applyCrop() {
+  const img = document.getElementById('cropImage');
+  const { cropX, cropY, cropWidth, cropHeight } = getCropDimensions();
+  
+  try {
+    const croppedImage = await cropImage(img.src, cropX, cropY, cropWidth, cropHeight);
+    document.getElementById('cropModal').style.display = 'none';
+    setupCanvasWithBackground(croppedImage);
+  } catch (error) {
+    console.error('Error cropping image:', error);
+    alert('Error cropping image. Please try again.');
+  }
+}
+
+
+function skipCrop() {
+  document.getElementById('cropModal').style.display = 'none';
+  setupCanvasWithBackground(document.getElementById('cropImage').src);
+}
+
+function setupCanvasWithBackground(bgImage) {
+  const { w, h } = paperSizes[selectedPage];
+  const pw = w * PPM, ph = h * PPM;
+  canvas.style.width = `${pw}px`;
+  canvas.style.height = `${ph}px`;
+  
+  // Set letterhead background
+  const letterheadBg = document.getElementById('letterheadBackground');
+  letterheadBg.style.width = `${pw}px`;
+  letterheadBg.style.height = `${ph}px`;
+  
+  if (bgImage) {
+    // Apply the background image
+    letterheadBg.style.backgroundImage = `url(${bgImage})`;
+    letterheadBg.style.display = 'block';
+  } else {
+    // No background
+    letterheadBg.style.backgroundImage = 'none';
+    letterheadBg.style.display = 'none';
+  }
+  
+  document.getElementById('paperSelectModal').style.display = 'none';
+  enableInteractions();
+}
+// Update crop ratio when changed
+document.getElementById('cropRatio').addEventListener('change', function(e) {
+  currentCropRatio = e.target.value;
+  updateCropOverlay();
+});
 
 // Function to generate label elements
 function generateLabels(page = 1) {
@@ -969,7 +1507,7 @@ function generateValues(page = 1) {
       valueDiv.className = 'draggable-label';
       valueDiv.draggable = true;
       valueDiv.setAttribute('data-label', reportData[key]);
-      valueDiv.textContent = formatValueText(reportData[key]);
+      valueDiv.textContent = reportData[key];
       valuesContainer.appendChild(valueDiv);
     }
   });
@@ -1061,10 +1599,12 @@ document.getElementById('customBgUpload').addEventListener('change', function(e)
     const reader = new FileReader();
     reader.onload = function(event) {
       customBackgroundImage = event.target.result;
-      // Update the preview
-      const customPreview = document.querySelector('.background-option[onclick="selectBackground(\'custom\')"] .bg-preview');
-      customPreview.style.backgroundImage = `url(${customBackgroundImage})`;
-      customPreview.textContent = '';
+      // Update the preview - now matching your actual HTML structure
+      const customPreview = document.querySelector('.option[onclick="selectBackground(\'custom\')"] .preview');
+      if (customPreview) {
+        customPreview.style.backgroundImage = `url(${customBackgroundImage})`;
+        customPreview.textContent = '';
+      }
     };
     reader.readAsDataURL(file);
   }
@@ -1090,7 +1630,7 @@ let guideSettings = {
 
     
     const canvas = document.getElementById('canvas'),
-     xGuide = document.getElementById('xGuide'), yGuide = document.getElementById('yGuide');
+    xGuide = document.getElementById('xGuide'), yGuide = document.getElementById('yGuide');
 
    function selectPage(page) {
   document.querySelectorAll('.option[data-size]').forEach(option => {
@@ -1107,6 +1647,30 @@ function startDesigning() {
     return;
   }
   
+  // Skip cropping for predefined backgrounds and no background
+  if (selectedBackground === 'none' || 
+      selectedBackground === 'letterhead' || 
+      selectedBackground === 'grid') {
+    setupCanvas();
+    return;
+  }
+  
+  // Show crop modal only for custom background
+  if (selectedBackground === 'custom') {
+    if (customBackgroundImage) {
+      showCropModal(customBackgroundImage);
+    } else {
+      // No custom image selected, proceed without background
+      setupCanvasWithBackground(null);
+    }
+    return;
+  }
+  
+  // Default case (shouldn't normally reach here)
+  setupCanvasWithBackground(null);
+}
+
+function setupCanvas() {
   const { w, h } = paperSizes[selectedPage];
   const pw = w * PPM, ph = h * PPM;
   canvas.style.width = `${pw}px`;
@@ -1146,7 +1710,6 @@ function startDesigning() {
   enableInteractions();
 }
 
-
     function setPaperSize(){
       const sel = document.getElementById('paperSize').value;
       const {w,h} = paperSizes[sel];
@@ -1158,16 +1721,20 @@ function startDesigning() {
     }
 
     function enableInteractions(){
-      document.querySelectorAll('.draggable-label').forEach(lbl=>{
-        lbl.ondragstart=e=>e.dataTransfer.setData('text/plain', lbl.dataset.label);
-      });
-      canvas.ondragover=e=>e.preventDefault();
-      canvas.ondrop=e=>{
-        e.preventDefault();
-        const t=e.dataTransfer.getData('text/plain');
-        const rect=canvas.getBoundingClientRect();
-        createLabel(t, e.clientX-rect.left, e.clientY-rect.top);
-      };
+    document.querySelectorAll('.draggable-label').forEach(lbl=>{
+    lbl.ondragstart=e=>{
+      // Use the formatted text for dragging
+      e.dataTransfer.setData('text/plain', lbl.textContent);
+    };
+  });
+  
+  canvas.ondragover=e=>e.preventDefault();
+  canvas.ondrop=e=>{
+    e.preventDefault();
+    const t=e.dataTransfer.getData('text/plain');
+    const rect=canvas.getBoundingClientRect();
+    createLabel(t, e.clientX-rect.left, e.clientY-rect.top);
+  };
 
     
       document.getElementById('deleteSelected').onclick=()=>{if(selectedElement){selectedElement.remove(); saveLayout(); selectedElement=null;}};
@@ -1306,8 +1873,19 @@ function createLabel(text, x, y) {
   if (text === "Blank Label") {
     div.setAttribute('data-placeholder', 'Enter your text here...');
     div.contentEditable = true;
-  } else {
+  }
+    // Check if this is a value (from VALUES section)
+  else if (Object.values(reportData).includes(text)) {
+    // For values, use the raw text without formatting
     div.textContent = text;
+    div.contentEditable = true;
+  }
+  
+  else {
+    // Store the original key in a data attribute
+    div.setAttribute('data-original-key', text);
+    // Apply the same formatting as in the sidebar
+    div.textContent = formatLabelText(text);
     div.contentEditable = true;
   }
   
@@ -1579,3 +2157,5 @@ function clearSnap() {
   </script>
 </body>
 </html>
+
+
