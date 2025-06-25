@@ -54,6 +54,9 @@ children_desc_range:"children_desc_range",
 
 };
 
+let globalApiData = null;
+let isApiLoading = false;
+
 let cropZoom = 1;
 let cropOffsetX = 0;
 let cropOffsetY = 0;
@@ -66,15 +69,6 @@ let currentLabelPage = 1;
 let currentValuePage = 1;
 const itemsPerPage = 6;
 
-let pw ;
-
-   const paperSizes = {
-      A4: { w: 210, h: 297 },
-      A5: { w: 148, h: 210 },
-      B4: { w: 250, h: 353 },
-      Letter: { w: 216, h: 279 }
-    };
-
 // Add this after the cropZoom variable declarations
 document.getElementById('zoomPercentage').addEventListener('change', function(e) {
   const percentage = parseInt(e.target.value);
@@ -83,19 +77,89 @@ document.getElementById('zoomPercentage').addEventListener('change', function(e)
   }
 });
 
+async function fetchAndCacheApiData() {
+  // If already loading, wait for it to complete
+  if (isApiLoading) {
+    await new Promise(resolve => {
+      const check = () => {
+        if (!isApiLoading) resolve();
+        else setTimeout(check, 100);
+      };
+      check();
+    });
+    return globalApiData;
+  }
+
+  // If already cached, return cached data
+  if (globalApiData) {
+    return globalApiData;
+  }
+
+  try {
+    isApiLoading = true;
+    const token = localStorage.getItem('medtoken');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const formData = new FormData();
+    formData.append('medtoken', token);
+
+    const response = await fetch('http://192.168.1.3:3000/api/allkey', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to fetch report data');
+    }
+
+    // Cache the data globally
+    globalApiData = data;
+    return data;
+  } catch (error) {
+    console.error('Error fetching API data:', error);
+    throw error;
+  } finally {
+    isApiLoading = false;
+  }
+}
+
+
 function setCropZoom(zoom) {
+  const cropImage = document.getElementById('cropImage');
+  
+  // Calculate the minimum zoom level where the image fits exactly in the container
+  const container = document.querySelector('.crop-container');
+  const containerWidth = container.clientWidth;
+  const containerHeight = container.clientHeight;
+  
+  const imgWidth = cropImage.naturalWidth;
+  const imgHeight = cropImage.naturalHeight;
+  
+  const minScale = Math.min(
+    containerWidth / imgWidth,
+    containerHeight / imgHeight
+  );
+  
   // Convert zoom to percentage (0-150%)
   const percentage = Math.round(zoom * 100);
-  // Ensure percentage stays within bounds (0-150)
-  const clampedPercentage = Math.max(0, Math.min(150, percentage));
   
-  // Convert back to zoom factor (0-1.5)
+  // Ensure percentage stays within bounds (minScale to 150)
+  const clampedPercentage = Math.max(Math.round(minScale * 100), Math.min(150, percentage));
+  
+  // Convert back to zoom factor
   cropZoom = clampedPercentage / 100;
   
   document.getElementById('zoomPercentage').value = clampedPercentage;
   document.getElementById('cropImage').style.transform = `translate(${cropOffsetX}px, ${cropOffsetY}px) scale(${cropZoom})`;
 }
-
 // Update the existing zoom functions to use setCropZoom
 function zoomCropIn() {
   const currentPercentage = parseInt(document.getElementById('zoomPercentage').value);
@@ -106,13 +170,44 @@ function zoomCropIn() {
 
 function zoomCropOut() {
   const currentPercentage = parseInt(document.getElementById('zoomPercentage').value);
-  if (currentPercentage > 0) {
+  const cropImage = document.getElementById('cropImage');
+  
+  // Calculate the minimum zoom level where the image fits exactly in the container
+  const container = document.querySelector('.crop-container');
+  const containerWidth = container.clientWidth;
+  const containerHeight = container.clientHeight;
+  
+  const imgWidth = cropImage.naturalWidth;
+  const imgHeight = cropImage.naturalHeight;
+  
+  const minScale = Math.min(
+    containerWidth / imgWidth,
+    containerHeight / imgHeight
+  );
+  
+  // Only zoom out if we're above the minimum scale
+  if (currentPercentage > minScale * 100) {
     setCropZoom(cropZoom - 0.1);
   }
 }
 
 function resetCropZoom() {
-  setCropZoom(1);
+  const cropImage = document.getElementById('cropImage');
+  const container = document.querySelector('.crop-container');
+  
+  // Calculate the initial scale that fits the image in the container
+  const containerWidth = container.clientWidth;
+  const containerHeight = container.clientHeight;
+  
+  const imgWidth = cropImage.naturalWidth;
+  const imgHeight = cropImage.naturalHeight;
+  
+  const initialScale = Math.min(
+    containerWidth / imgWidth,
+    containerHeight / imgHeight
+  );
+  
+  setCropZoom(initialScale);
 }
 
 // Update the image load handler to set initial percentage
@@ -123,30 +218,7 @@ function resetCropZoom() {
 
 // Helper function to get crop dimensions
 
-function setupCanvasWithBackground(bgImage) {
-  const { w, h } = paperSizes[selectedPage];
-  const pw = w * PPM, ph = h * PPM;
-  canvas.style.width = `${pw}px`;
-  canvas.style.height = `${ph}px`;
-  
-  // Set letterhead background
-  const letterheadBg = document.getElementById('letterheadBackground');
-  letterheadBg.style.width = `${pw}px`;
-  letterheadBg.style.height = `${ph}px`;
-  
-  if (bgImage) {
-    // Apply the background image
-    letterheadBg.style.backgroundImage = `url(${bgImage})`;
-    letterheadBg.style.display = 'block';
-  } else {
-    // No background
-    letterheadBg.style.backgroundImage = 'none';
-    letterheadBg.style.display = 'none';
-  }
-  
-  document.getElementById('paperSelectModal').style.display = 'none';
-  enableInteractions();
-}
+
 // Update the showCropModal function
 function showCropModal(imageSrc) {
   document.getElementById('paperSelectModal').style.display = 'none';
@@ -196,39 +268,36 @@ function showCropModal(imageSrc) {
   };
   
   // Wait for image to load before positioning
-  cropImage.onload = function() {
-    // Reset transform first
-    cropImage.style.transform = 'translate(0, 0) scale(1)';
-    
-    const container = document.querySelector('.crop-container');
-    const containerWidth = container.clientWidth;
-    const containerHeight = container.clientHeight;
-    
-    // Get natural dimensions of the image
-    const imgWidth = cropImage.naturalWidth;
-    const imgHeight = cropImage.naturalHeight;
-    
-    // Calculate scale to fit container while maintaining aspect ratio
-    const scale = Math.min(
-      containerWidth / imgWidth,
-      containerHeight / imgHeight
-    );
-    
-    // Apply initial scale and center the image
-    cropZoom = scale;
-   // Ensure initial zoom is between 0-150%
-  if (cropZoom > 1.5) cropZoom = 1.5;
-  if (cropZoom < 0) cropZoom = 0;
+ cropImage.onload = function() {
+  // Reset transform first
+  cropImage.style.transform = 'translate(0, 0) scale(1)';
   
+  const container = document.querySelector('.crop-container');
+  const containerWidth = container.clientWidth;
+  const containerHeight = container.clientHeight;
+  
+  // Get natural dimensions of the image
+  const imgWidth = cropImage.naturalWidth;
+  const imgHeight = cropImage.naturalHeight;
+  
+  // Calculate scale to fit container while maintaining aspect ratio
+  const scale = Math.min(
+    containerWidth / imgWidth,
+    containerHeight / imgHeight
+  );
+  
+  // Apply initial scale and center the image
+  cropZoom = scale;
   cropOffsetX = (containerWidth - imgWidth * cropZoom) / 2;
   cropOffsetY = (containerHeight - imgHeight * cropZoom) / 2;
   
   cropImage.style.width = `${imgWidth}px`;
   cropImage.style.height = `${imgHeight}px`;
   cropImage.style.transform = `translate(${cropOffsetX}px, ${cropOffsetY}px) scale(${cropZoom})`;
-
+  
+  // Set initial zoom percentage
   setCropZoom(cropZoom);
-  };
+};
 }
 
 function updateCropOverlay() {
@@ -296,38 +365,17 @@ function getCropDimensions() {
 
 async function fetchReportData() {
   try {
-    const token = localStorage.getItem('medtoken');
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-
-    const formData = new FormData();
-    formData.append('medtoken', token);
-
-    const response = await fetch('http://192.168.1.3:3000/api/allkey', {
-      method: 'POST',
-      body: formData
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    
-    if (!data.success) {
-      throw new Error(data.message || 'Failed to fetch report data');
-    }
-
+    const data = await fetchAndCacheApiData();
     return {
       keys: data.keys,
       signatureData: data.signatureData
     };
   } catch (error) {
-    console.error('Error fetching report data:', error);
+    console.error('Error in fetchReportData:', error);
     throw error;
   }
 }
+
 
 function cropImage(imageSrc, cropX, cropY, cropWidth, cropHeight) {
   return new Promise((resolve, reject) => {
@@ -401,7 +449,30 @@ async function applyCrop() {
 
 
 
-
+function setupCanvasWithBackground(bgImage) {
+  const { w, h } = paperSizes[selectedPage];
+  const pw = w * PPM, ph = h * PPM;
+  canvas.style.width = `${pw}px`;
+  canvas.style.height = `${ph}px`;
+  
+  // Set letterhead background
+  const letterheadBg = document.getElementById('letterheadBackground');
+  letterheadBg.style.width = `${pw}px`;
+  letterheadBg.style.height = `${ph}px`;
+  
+  if (bgImage) {
+    // Apply the background image
+    letterheadBg.style.backgroundImage = `url(${bgImage})`;
+    letterheadBg.style.display = 'block';
+  } else {
+    // No background
+    letterheadBg.style.backgroundImage = 'none';
+    letterheadBg.style.display = 'none';
+  }
+  
+  document.getElementById('paperSelectModal').style.display = 'none';
+  enableInteractions();
+}
 // Update crop ratio when changed
 document.getElementById('cropRatio').addEventListener('change', function(e) {
   currentCropRatio = e.target.value;
@@ -457,8 +528,7 @@ function generateLabels(page = 1) {
     "children_desc_range"
   ];
   
-let selectedBackground = 'none';
-let customBackgroundImage = null;
+
 
   const startIdx = (page - 1) * itemsPerPage;
   const endIdx = startIdx + itemsPerPage;
@@ -493,24 +563,7 @@ async function generateValues(page = 1) {
   
   try {
     // Create FormData and append medtoken
-    const formData = new FormData();
-    formData.append('medtoken', localStorage.getItem('medtoken'));
-    
-    // Fetch the data from API using POST
-    const response = await fetch('http://192.168.1.3:3000/api/allkey', {
-      method: 'POST',
-      body: formData
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    if (!data.success) {
-      throw new Error(data.message || 'Failed to load values');
-    }
+    const data = await fetchAndCacheApiData();
     
     // Clear container
     valuesContainer.innerHTML = '';
@@ -667,7 +720,12 @@ let guideSettings = {
   minSpacing: 20
 };
 
- 
+    const paperSizes = {
+      A4: { w: 210, h: 297 },
+      A5: { w: 148, h: 210 },
+      B4: { w: 250, h: 353 },
+      Letter: { w: 216, h: 279 }
+    };
     const PPM = 3.78;
     let zoomLevel = 1, editMode = true, selectedElement = null;
 
@@ -692,20 +750,10 @@ async function fetchSignatureData() {
   try {
     if (spinner) spinner.style.display = 'flex';
     
-    const formData = new FormData();
-    formData.append('medtoken', localStorage.getItem('medtoken'));
+    const data = await fetchAndCacheApiData();
     
-    const response = await fetch('http://192.168.1.3:3000/api/allkey', {
-      method: 'POST',
-      body: formData
-    });
-    
-    if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);
-    
-    const data = await response.json();
-    
-    if (!data.success || !data.signatureData) {
-      throw new Error(data.message || 'No signature data available');
+    if (!data.signatureData) {
+      throw new Error('No signature data available');
     }
     
     signatureData = data.signatureData;
@@ -713,11 +761,7 @@ async function fetchSignatureData() {
     
   } catch (error) {
     console.error('Error fetching signatures:', error);
-    signaturesContainer.innerHTML = `
-      <div class="error-message">
-        Error loading signatures: ${error.message}
-      </div>
-    `;
+    // Handle error...
   } finally {
     if (spinner) spinner.style.display = 'none';
   }
@@ -799,14 +843,30 @@ function generateSignatures() {
     return;
   }
 
+  // Create a container for all signature items
+  const signatureList = document.createElement('div');
+  signatureList.className = 'signature-list';
+  
   signatureData.forEach(signature => {
-    const signatureDiv = document.createElement('div');
-    signatureDiv.className = 'draggable-label signature-item';
-    signatureDiv.draggable = true;
-    signatureDiv.setAttribute('data-label', signature.sign_name);
+    // Create a container for each signature pair
+    const signatureItem = document.createElement('div');
+    signatureItem.className = 'signature-item-container';
     
-    // Add icon and text
-    signatureDiv.innerHTML = `
+    // Create a box for the display text (now draggable)
+    const displayTextDiv = document.createElement('div');
+    displayTextDiv.className = 'draggable-label signature-display-text';
+    displayTextDiv.draggable = true;
+    displayTextDiv.setAttribute('data-label', `display_${signature.sign_name}`);
+    displayTextDiv.setAttribute('data-display-text', signature.display_text || '');
+    displayTextDiv.textContent = signature.display_text || 'No label text';
+    
+    // Create a box for the signature name (draggable)
+    const signatureNameDiv = document.createElement('div');
+    signatureNameDiv.className = 'draggable-label signature-name';
+    signatureNameDiv.draggable = true;
+    signatureNameDiv.setAttribute('data-label', signature.sign_name);
+    signatureNameDiv.setAttribute('data-display-text', signature.display_text || '');
+    signatureNameDiv.innerHTML = `
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
         <circle cx="12" cy="7" r="4"></circle>
@@ -814,9 +874,15 @@ function generateSignatures() {
       ${signature.sign_name}
     `;
     
-    signatureDiv.title = signature.display_text || signature.sign_name;
-    signaturesContainer.appendChild(signatureDiv);
+    // Add both to the container
+    signatureItem.appendChild(displayTextDiv);
+    signatureItem.appendChild(signatureNameDiv);
+    
+    // Add the container to the list
+    signatureList.appendChild(signatureItem);
   });
+  
+  signaturesContainer.appendChild(signatureList);
 }
 
 
@@ -971,17 +1037,19 @@ document.getElementById('distanceGuideColor').onchange = e => {
 //   guideSettings.minSpacing = parseInt(e.target.value);
 //   document.getElementById('minSpacingValue').textContent = `${guideSettings.minSpacing}px`;
 // };
-document.getElementById('toggleGuides').addEventListener('change', (e) => {
-  guideSettings.enabled = e.target.checked;
-  if (!guideSettings.enabled) clearSnap();
-});
-document.getElementById('toggleDistanceGuides').addEventListener('change', (e) => {
-  guideSettings.distanceEnabled = e.target.checked;
-  if (!guideSettings.distanceEnabled) {
-    xDistanceGuide.style.display = yDistanceGuide.style.display = 'none';
-    document.getElementById('distanceValue').style.display = 'none';
-  }
-});
+
+
+// document.getElementById('toggleGuides').addEventListener('change', (e) => {
+//   guideSettings.enabled = e.target.checked;
+//   if (!guideSettings.enabled) clearSnap();
+// });
+// document.getElementById('toggleDistanceGuides').addEventListener('change', (e) => {
+//   guideSettings.distanceEnabled = e.target.checked;
+//   if (!guideSettings.distanceEnabled) {
+//     xDistanceGuide.style.display = yDistanceGuide.style.display = 'none';
+//     document.getElementById('distanceValue').style.display = 'none';
+//   }
+// });
 
 // Add to enableInteractions() function
 document.getElementById('bgOpacity').oninput = e => {
@@ -1132,6 +1200,26 @@ else if (text === "Barcode") {
     makeDraggable(div);
     makeResizable(div, r);
 }
+
+  else if (text.startsWith('display_')) {
+    const signName = text.replace('display_', '');
+    const signature = signatureData.find(sig => sig.sign_name === signName);
+    if (signature) {
+      div.textContent = signature.display_text || '';
+      div.setAttribute('data-signature-display', 'true');
+      div.setAttribute('data-signature-name', signName);
+      div.contentEditable = true;
+    }
+  }
+  // Handle signature name
+  else if (signatureData.some(sig => sig.sign_name === text)) {
+    const signature = signatureData.find(sig => sig.sign_name === text);
+    div.textContent = signature.sign_name;
+    div.setAttribute('data-signature', 'true');
+    div.setAttribute('data-display-text', signature.display_text || '');
+    div.contentEditable = false;
+  }
+
   
   // Handle blank label differently
   else if (text === "Blank Label") {
