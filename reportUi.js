@@ -843,16 +843,14 @@ function generateSignatures() {
     return;
   }
 
-  // Create a container for all signature items
   const signatureList = document.createElement('div');
   signatureList.className = 'signature-list';
   
   signatureData.forEach(signature => {
-    // Create a container for each signature pair
     const signatureItem = document.createElement('div');
     signatureItem.className = 'signature-item-container';
     
-    // Create a box for the display text (now draggable)
+    // Display text (draggable)
     const displayTextDiv = document.createElement('div');
     displayTextDiv.className = 'draggable-label signature-display-text';
     displayTextDiv.draggable = true;
@@ -860,12 +858,14 @@ function generateSignatures() {
     displayTextDiv.setAttribute('data-display-text', signature.display_text || '');
     displayTextDiv.textContent = signature.display_text || 'No label text';
     
-    // Create a box for the signature name (draggable)
+    // Signature name (draggable)
     const signatureNameDiv = document.createElement('div');
     signatureNameDiv.className = 'draggable-label signature-name';
     signatureNameDiv.draggable = true;
     signatureNameDiv.setAttribute('data-label', signature.sign_name);
     signatureNameDiv.setAttribute('data-display-text', signature.display_text || '');
+    signatureNameDiv.setAttribute('data-user-id', signature.user_id || '');
+    signatureNameDiv.setAttribute('data-designation', signature.designation || '');
     signatureNameDiv.innerHTML = `
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -874,17 +874,25 @@ function generateSignatures() {
       ${signature.sign_name}
     `;
     
-    // Add both to the container
+    // Add designation as a draggable label (if available)
+    if (signature.designation) {
+      const designationDiv = document.createElement('div');
+      designationDiv.className = 'draggable-label signature-display-text';
+      designationDiv.draggable = true;
+      designationDiv.setAttribute('data-label', `designation_${signature.sign_name}`);
+      designationDiv.setAttribute('data-value', signature.designation);
+      designationDiv.textContent = signature.designation;
+      
+      signatureItem.appendChild(designationDiv);
+    }
+    
     signatureItem.appendChild(displayTextDiv);
     signatureItem.appendChild(signatureNameDiv);
-    
-    // Add the container to the list
     signatureList.appendChild(signatureItem);
   });
   
   signaturesContainer.appendChild(signatureList);
 }
-
 
 function setupCanvas() {
   const { w, h } = paperSizes[selectedPage];
@@ -1200,6 +1208,37 @@ else if (text === "Barcode") {
     makeDraggable(div);
     makeResizable(div, r);
 }
+
+else if (text === "Signature Image") {
+    div.className = 'label-box signature-image';
+    div.style.width = '200px'; // Default width
+    div.style.height = '80px'; // Default height
+    
+    const img = document.createElement('img');
+    img.src = './images/signature.png';
+    img.alt = 'Signature';
+    img.draggable = false;
+    div.appendChild(img);
+    
+    // Make sure the resizer is added after the image
+    const r = document.createElement('div'); 
+    r.className = 'resizer'; 
+    div.appendChild(r);
+    
+    // Make draggable and resizable
+    makeDraggable(div);
+    makeResizable(div, r);
+  }
+
+  else if (text.startsWith('designation_')) {
+    const signName = text.replace('designation_', '');
+    const signature = signatureData.find(sig => sig.sign_name === signName);
+    if (signature && signature.designation) {
+      div.textContent = signature.designation;
+      div.setAttribute('data-original-key', `designation_${signName}`);
+      div.contentEditable = true;
+    }
+  }
 
   else if (text.startsWith('display_')) {
     const signName = text.replace('display_', '');

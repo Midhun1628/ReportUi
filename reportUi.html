@@ -1226,6 +1226,33 @@ input[type="range"] {
    cursor: move;
 }
 
+/* Signature Image Label */
+.draggable-label.signature-image-label {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px dashed rgba(255, 255, 255, 0.3);
+  margin-top: 15px;
+  cursor: grab;
+  border-radius: 4px;
+}
+
+.draggable-label.signature-image-label:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Signature Image on Canvas */
+.label-box.signature-image {
+  background: transparent;
+  border: none;
+  overflow: hidden;
+  position: relative;
+}
+
+.label-box.signature-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
 
   </style>
 </head>
@@ -1417,7 +1444,7 @@ input[type="range"] {
   </button>
 </h3>
 <div class="signature-container">
-  <a href="https://demo.medecue.com/managesettings.html" id="setupSignature" target="_blank" style="color: #3498db; text-decoration: none; margin-bottom: 10px; display: block;">Setup Signature</a>
+  <a href="http://192.168.1.3/sivasakthiclinical/sivasakthi.medecue.com/managesettings.html" id="setupSignature" target="_blank" style="color: #3498db; text-decoration: none; margin-bottom: 10px; display: block;">Setup Signature</a>
   <div id="dynamic-signatures">
     <!-- Loading spinner will appear here while data loads -->
     <div class="loading-spinner" style="display: none; text-align: center; padding: 10px;">
@@ -1427,7 +1454,11 @@ input[type="range"] {
       </svg>
       <span style="color: white; margin-left: 8px;">Loading signatures...</span>
     </div>
-    <!-- Dynamic signatures will be inserted here by JavaScript -->
+  </div>
+  
+  <!-- Add this new signature image element -->
+  <div class="draggable-label signature-image-label" draggable="true" data-label="Signature Image">
+    <img src="./images/signature.png" alt="Signature" style="width: 100%; height: auto; pointer-events: none;">
   </div>
 </div>
 
